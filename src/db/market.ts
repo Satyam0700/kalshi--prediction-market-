@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { required } from "zod/mini";
 
 const marketSchema = new mongoose.Schema({
-    title : {
+    title: {
         type: String,
         required: true,
     },
@@ -11,7 +11,7 @@ const marketSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    expirayDate:{
+    expiry: {
         type: Date,
         required: true,
     },
@@ -20,12 +20,12 @@ const marketSchema = new mongoose.Schema({
         required: true
     },
 
-    side:{
+    side: {
         type: String,
         enum: ["yes", "no"],
         required: true
     },
-    resolution:{
+    resolution: {
         type: String,
         enum: ["yes", "no", "null"],
         default: "null"
