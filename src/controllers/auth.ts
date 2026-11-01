@@ -1,6 +1,6 @@
 import { type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
-import { SignInTypes, SignUpTypes } from "../types/types";
+import { onrampSchema, SignInTypes, SignUpTypes } from "../types/types";
 import { User } from "../db/user";
 
 export const signup = async (req: Request, res: Response) => {
@@ -13,10 +13,10 @@ export const signup = async (req: Request, res: Response) => {
   const { username, password } = data;
 
   try {
-    const ExsitingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username });
 
-    if (ExsitingUser) {
-      return res.status(401).json({ message: "Already register" });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
     }
 
     const hashPassword = await Bun.password.hash(password);
@@ -24,6 +24,7 @@ export const signup = async (req: Request, res: Response) => {
     const user = await User.create({
       username,
       password: hashPassword,
+      balance: 0,
     });
 
     return res.status(201).json({
@@ -32,9 +33,8 @@ export const signup = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error.code === 11000) {
-      return res.status(409).json({ error: "Email already registered" });
+      return res.status(409).json({ message: "User already exists" });
     }
-
     return res.status(500).json({ error: "Could not create account" });
   }
 };
@@ -72,5 +72,28 @@ export const signin = async (req: Request, res: Response) => {
     res.json({ token });
   } catch (error) {
     return res.status(500).json({ error: "Could not sign in" });
+  }
+};
+
+export const onramp = async (req: Request, res: Response) => {
+  const { amount } = onrampSchema.parse(req.body);
+  console.log(amount)
+  console.log(req.user)
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user?.sub,
+      { $inc: { balance: amount } },
+      { returnDocument: 'after' },
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+
+    }
+    res.status(200).json({message: "Done"})
+  } catch (error: any) {
+    return res.status(500).json({ error: "Could not process onramp" });
   }
 };
